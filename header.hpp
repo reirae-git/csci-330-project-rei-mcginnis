@@ -13,7 +13,6 @@ class PlayerCharacter {
 public:
     PlayerClass* playerClass;
     PlayerCharacter();
-    ~PlayerCharacter();
     void setPlayerClass();
     int getCurrHp() const;
     PlayerClass* getPlayerClass() const;
@@ -33,70 +32,85 @@ public:
     int defense;
     int damage;
     int magika;
-    bool locked;
+    bool locked;    
+    const char* getClassName() const;
+    int getMaxHp() const;
+    int getDefense() const;
+    int getDamage() const;
+    int getMagika() const;
+    bool isLocked() const;  
+    void displayStats() const;
     
-    PlayerClass();
-    virtual ~PlayerClass() = default;
-    
-    const char* getClassName() const { return className; }
-    int getMaxHp() const { return maxHp; }
-    int getDefense() const { return defense; }
-    int getDamage() const { return damage; }
-    int getMagika() const { return magika; }
-    bool isLocked() const { return locked; }
-    virtual void unlock() { locked = false; }
-    
-    void displayStats() const {
-        printf("Class: %s\nMax HP: %d\nDefense: %d\nDamage: %d\nMagika: %d\n", 
-               className, maxHp, defense, damage, magika);
-    }
-    
-    virtual void attack() = 0;
-    virtual void castSpell() = 0;
+    virtual int attack() = 0;
+    virtual int castSpell() = 0;
 };
 
 class UnlockableClass : public PlayerClass {
 public:
     UnlockableClass();
-    virtual void unlock() = 0;
+    void unlock();
 };
 
 // Concrete player classes
 class Wizard : public PlayerClass {
 public:
     Wizard();
-    void attack() override;
-    void castSpell() override;
+    int attack() override;
+    int castSpell() override;
 };
 
 class Guard : public PlayerClass {
 public:
     Guard();
-    void attack() override;
-    void castSpell() override;
+    int attack() override;
+    int castSpell() override;
 };
 
 class Soldier : public PlayerClass {
 public:
     Soldier();
-    void attack() override;
-    void castSpell() override;
+    int attack() override;
+    int castSpell() override;
 };
 
 class Paladin : public UnlockableClass {
 public:
     Paladin();
-    void unlock() override;
-    void attack() override;
-    void castSpell() override;
+    int attack() override;
+    int castSpell() override;
 };
 
 class Sorcerer : public UnlockableClass {
 public:
     Sorcerer();
-    void unlock() override;
-    void attack() override;
-    void castSpell() override;
+    int attack() override;
+    int castSpell() override;
 };
 
-#endif
+class Enemy {
+public:
+    char enemyType[50];
+    int hp;
+    int maxHp;
+    int damage;
+    int defense;
+    Enemy(const char* type, int health, int maxHealth, int dmg, int def);
+    void displayStats() const;
+    void loseHp(int dmg);
+    void gainHp(int heal);
+    int getHp() const;
+    int getDamage() const;
+    int getDefense() const;
+    const char* getEnemyType() const;
+};
+
+class Combat {
+public:
+    PlayerCharacter &player;
+    Enemy &enemy;
+    static void startCombat(PlayerCharacter *player, Enemy *enemy);
+    static void playerTurn(PlayerCharacter *player, Enemy *enemy);
+    static void enemyTurn(PlayerCharacter *player, Enemy *enemy);
+    static bool isCombatOver(PlayerCharacter *player, Enemy *enemy);
+};
+#endif //HEADER_HPP
