@@ -1,19 +1,28 @@
-// header.hpp
-#ifndef HEADER_HPP
-#define HEADER_HPP
+// player.hpp
+#ifndef PLAYER_HPP
+#define PLAYER_HPP
 
 #include <cstdio>
+#include <cstring>
+#include <iostream>
+#include "items.hpp"
 
 // Forward declaration
 class Enemy;
 
 class PlayerClass;
+class Paladin;
+class Sorcerer;
 
 class PlayerCharacter {
 public:
+    bool dead;
     PlayerClass* playerClass;
+    Inventory inventory;
+    
     PlayerCharacter();
     void setPlayerClass();
+    void setGlobalUnlockables(Paladin* paladin, Sorcerer* sorcerer);
     int getCurrHp() const;
     PlayerClass* getPlayerClass() const;
     void loseHp(int damage);
@@ -87,30 +96,5 @@ public:
     int castSpell() override;
 };
 
-class Enemy {
-public:
-    char enemyType[50];
-    int hp;
-    int maxHp;
-    int damage;
-    int defense;
-    Enemy(const char* type, int health, int maxHealth, int dmg, int def);
-    void displayStats() const;
-    void loseHp(int dmg);
-    void gainHp(int heal);
-    int getHp() const;
-    int getDamage() const;
-    int getDefense() const;
-    const char* getEnemyType() const;
-};
 
-class Combat {
-public:
-    PlayerCharacter &player;
-    Enemy &enemy;
-    static void startCombat(PlayerCharacter *player, Enemy *enemy);
-    static void playerTurn(PlayerCharacter *player, Enemy *enemy);
-    static void enemyTurn(PlayerCharacter *player, Enemy *enemy);
-    static bool isCombatOver(PlayerCharacter *player, Enemy *enemy);
-};
-#endif //HEADER_HPP
+#endif //PLAYER_HPP

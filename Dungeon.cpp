@@ -1,13 +1,12 @@
 #include "dungeon.hpp"
-//
+
 void Dungeon::generateNewFloor(){
     floor++;
     floors.push_back(Floor(floor));
 }
 
 Room* Dungeon::generateRandomRoom(int x, int y){
-    srand(time(0));
-    int roomType = rand() % 100; //0-normal, 1-treasure, 2-enemy
+    int roomType = rand() % 100;
     if (roomType < 60) {
         return new BattleRoom(x,y);
     } else if (roomType < 80) {
@@ -18,10 +17,8 @@ Room* Dungeon::generateRandomRoom(int x, int y){
 }
 
 void Floor::generateRooms(){
-    srand(time(0));
-
     int xNum = rand() % 9;
-    int yNum = rand() % 6 + 3; //avoids boss room being too close to start
+    int yNum = rand() % 6 + 3;
     rooms[xNum][yNum] = new BossRoom(xNum,yNum);
     if (floorNumber == 0) {
         rooms[4][0] = new StartRoom(4,0);
@@ -39,72 +36,9 @@ void Floor::generateRooms(){
     }
 }
 
-/*void Floor::connectRooms(int x, int y){
-    srand(time(0));
-    int connectionCount = rand() % 3 + 1; //1-4 connections
-    int currDirection = rand() % 4;
-    int directions[4] = {0,1,2,3}; //0-up, 1-right, 2-down, 3-left
-    if (x == 0) {
-        directions[3] = -1; //no left
-    }
-    if (x == SIZE - 1) {
-        directions[1] = -1; //no right
-    }
-    if (y == 0) {
-        directions[2] = -1; //no down
-    }
-    if (y == SIZE - 1) {
-        directions[0] = -1; //no up
-    }
-
-
-    for (int i = 0; i < connectionCount; i++) {
-        if (directions[currDirection] == -1 ) {
-            continue;
-        }
-        switch (currDirection) {
-            case 0:
-                if (rooms[x][y]->upRoom != nullptr) {
-                    break;
-                }
-                rooms[x][y]->upRoom = rooms[x][y+1];
-                rooms[x][y+1]->downRoom = rooms[x][y];
-                connectRooms(x, y+1);
-                break;
-            case 1:
-                if (rooms[x][y]->rightRoom != nullptr) {
-                    break;
-                }
-                rooms[x][y]->rightRoom = rooms[x+1][y];
-                rooms[x+1][y]->leftRoom = rooms[x][y];
-                connectRooms(x+1, y);
-                break;
-            case 2:
-                if (rooms[x][y]->downRoom != nullptr) {
-                    break;
-                }
-                rooms[x][y]->downRoom = rooms[x][y-1];
-                rooms[x][y-1]->upRoom = rooms[x][y];
-                connectRooms(x, y-1);
-                break;
-            case 3:
-                if (rooms[x][y]->leftRoom != nullptr) {
-                    break;
-                }
-                rooms[x][y]->leftRoom = rooms[x-1][y];
-                rooms[x-1][y]->rightRoom = rooms[x][y];
-                connectRooms(x-1, y);
-                break;
-        }
-        currDirection = rand() % 4;
-    }
-}*/
-
 void Floor::connectRooms(int x, int y){
-    // Use a visited tracking system
     std::vector<std::vector<bool>> visited(SIZE, std::vector<bool>(SIZE, false));
     
-    // Pass 1: Create main path from start to boss using DFS
     Room* bossRoom = nullptr;
     for (int i = 0; i < SIZE; i++) {
         for (int j = 0; j < SIZE; j++) {
@@ -116,27 +50,22 @@ void Floor::connectRooms(int x, int y){
         if (bossRoom) break;
     }
     
-    // DFS to create path
     dfsBuildPath(x, y, bossRoom, visited);
-    
-    // Pass 2: Add secondary connections and connect isolated rooms
     addSecondaryConnections(visited);
 }
 
 bool Floor::dfsBuildPath(int x, int y, Room* target, std::vector<std::vector<bool>>& visited) {
     visited[x][y] = true;
     
-    // Found the target!
     if (rooms[x][y] == target) {
         return true;
     }
     
-    // Try directions in random order
     std::vector<std::pair<int, int>> directions;
-    if (y < SIZE - 1) directions.push_back({0, 1});   // up
-    if (x < SIZE - 1) directions.push_back({1, 0});   // right
-    if (y > 0) directions.push_back({0, -1});         // down
-    if (x > 0) directions.push_back({-1, 0});         // left
+    if (y < SIZE - 1) directions.push_back({0, 1});
+    if (x < SIZE - 1) directions.push_back({1, 0});
+    if (y > 0) directions.push_back({0, -1});
+    if (x > 0) directions.push_back({-1, 0});
     
     std::random_device rd;
     std::mt19937 g(rd());
@@ -148,29 +77,23 @@ bool Floor::dfsBuildPath(int x, int y, Room* target, std::vector<std::vector<boo
         
         if (visited[newX][newY]) continue;
         
-        // Create connection
         connectTwoRooms(x, y, newX, newY);
         
-        // Recursively explore
         if (dfsBuildPath(newX, newY, target, visited)) {
-            return true; // Found path to boss!
+            return true;
         }
     }
     
-    return false; // Dead end
+    return false;
 }
 
 void Floor::addSecondaryConnections(std::vector<std::vector<bool>>& visited) {
-    srand(time(0));
-    
     for (int i = 0; i < SIZE; i++) {
         for (int j = 0; j < SIZE; j++) {
-            // If room wasn't visited, try to connect it to a visited neighbor
             if (!visited[i][j]) {
                 connectIsolatedRoom(i, j, visited);
             }
             
-            // Add occasional extra connections (30% chance if room has only 1 connection)
             if (visited[i][j] && countConnections(i, j) == 1 && rand() % 100 < 30) {
                 addRandomConnection(i, j);
             }
@@ -182,16 +105,16 @@ void Floor::connectTwoRooms(int x1, int y1, int x2, int y2) {
     int dx = x2 - x1;
     int dy = y2 - y1;
     
-    if (dx == 1) { // right
+    if (dx == 1) {
         rooms[x1][y1]->rightRoom = rooms[x2][y2];
         rooms[x2][y2]->leftRoom = rooms[x1][y1];
-    } else if (dx == -1) { // left
+    } else if (dx == -1) {
         rooms[x1][y1]->leftRoom = rooms[x2][y2];
         rooms[x2][y2]->rightRoom = rooms[x1][y1];
-    } else if (dy == 1) { // up
+    } else if (dy == 1) {
         rooms[x1][y1]->upRoom = rooms[x2][y2];
         rooms[x2][y2]->downRoom = rooms[x1][y1];
-    } else if (dy == -1) { // down
+    } else if (dy == -1) {
         rooms[x1][y1]->downRoom = rooms[x2][y2];
         rooms[x2][y2]->upRoom = rooms[x1][y1];
     }
@@ -207,7 +130,6 @@ int Floor::countConnections(int x, int y) {
 }
 
 void Floor::connectIsolatedRoom(int x, int y, std::vector<std::vector<bool>>& visited) {
-    // Try to connect to a visited neighbor
     std::vector<std::pair<int, int>> neighbors;
     if (y < SIZE - 1 && visited[x][y+1]) neighbors.push_back({0, 1});
     if (x < SIZE - 1 && visited[x+1][y]) neighbors.push_back({1, 0});
@@ -249,7 +171,7 @@ void Floor::displayFloor(){
                     std::cout << "|   ";
                 }
                 else if (i == 2) {
-                    if (rooms[l][j]->leftRoom != nullptr    ) {
+                    if (rooms[l][j]->leftRoom != nullptr) {
                         std::cout << "    ";
                     } else {
                         std::cout << "|   ";
@@ -274,12 +196,304 @@ void Floor::displayFloor(){
     }
 }
 
-/*void Floor::displayFloor(){
-    for (int j = SIZE - 1; j >= 0; j--) {
-        for (int i = 0; i < SIZE; i++) {
-            std::cout << "[R] ";
+// Room implementations
+void StartRoom::enterRoom(PlayerCharacter* player) {
+    if (cleared) return;
+    printf("\n=== Starting Room ===\n");
+    printf("You stand at the entrance of the dungeon. Your journey begins here.\n");
+    cleared = true;
+}
+
+void BattleRoom::enterRoom(PlayerCharacter* player) {
+    if (cleared) {
+        printf("\n=== Empty Battle Room ===\n");
+        printf("This room has already been cleared.\n");
+        return;
+    }
+    printf("\n=== Battle Room ===\n");
+    printf("You enter a dark room and hear growling...\n");
+    
+    Enemy* enemy = new Enemy(Enemy::generateRandomEnemy(0));
+    Combat::startCombat(player, enemy);
+    
+    if (!player->dead) {
+        cleared = true;
+        int goldFound = rand() % 20 + 10;
+        printf("You found %d gold!\n", goldFound);
+        
+        // 30% chance to drop a health potion
+        if (rand() % 100 < 30) {
+            printf("The enemy dropped something!\n");
+            player->inventory.addItem(new HealthPotion());
         }
-        std::cout << std::endl;
+    }
+    delete enemy;
+}
+
+void TreasureRoom::enterRoom(PlayerCharacter* player) {
+    if (cleared) {
+        printf("\n=== Empty Treasure Room ===\n");
+        printf("The treasure chests here have already been looted.\n");
+        return;
+    }
+    printf("\n=== Treasure Room ===\n");
+    printf("You found a treasure chest!\n");
+    
+    int treasureType = rand() % 100;
+    if (treasureType < 30) {
+        // Gold
+        int goldFound = rand() % 50 + 30;
+        printf("You found %d gold!\n", goldFound);
+    } else if (treasureType < 50) {
+        // Health potion
+        player->inventory.addItem(new HealthPotion());
+    } else if (treasureType < 65) {
+        // Mega potion
+        player->inventory.addItem(new MegaPotion());
+    } else if (treasureType < 75) {
+        // Weapon
+        int weaponRoll = rand() % 100;
+        if (weaponRoll < 60) {
+            player->inventory.addItem(new IronSword());
+        } else if (weaponRoll < 90) {
+            player->inventory.addItem(new SteelAxe());
+        } else {
+            player->inventory.addItem(new Excalibur());
+        }
+    } else if (treasureType < 85) {
+        // Armor
+        int armorRoll = rand() % 100;
+        if (armorRoll < 60) {
+            player->inventory.addItem(new LeatherArmor());
+        } else if (armorRoll < 90) {
+            player->inventory.addItem(new ChainMail());
+        } else {
+            player->inventory.addItem(new PlateArmor());
+        }
+    } else {
+        // Magic item
+        int magicRoll = rand() % 100;
+        if (magicRoll < 60) {
+            player->inventory.addItem(new ApprenticeStaff());
+        } else if (magicRoll < 90) {
+            player->inventory.addItem(new MasterStaff());
+        } else {
+            player->inventory.addItem(new ArcaneOrb());
+        }
+    }
+    
+    cleared = true;
+}
+
+void TrapRoom::enterRoom(PlayerCharacter* player) {
+    if (cleared) {
+        printf("\n=== Disabled Trap Room ===\n");
+        printf("The traps here have been disarmed.\n");
+        return;
+    }
+    printf("\n=== Trap Room ===\n");
+    printf("You hear a clicking sound...\n");
+    
+    int trapType = rand() % 3;
+    if (trapType == 0) {
+        int damage = rand() % 15 + 10;
+        printf("Spikes shoot from the walls! You take %d damage!\n", damage);
+        player->loseHp(damage);
+    } else if (trapType == 1) {
+        int damage = rand() % 20 + 15;
+        printf("A poison dart hits you! You take %d damage!\n", damage);
+        player->loseHp(damage);
+    } else {
+        printf("You notice the trap just in time and avoid it!\n");
+    }
+    
+    if (player->getCurrHp() <= 0) {
+        printf("You succumbed to the traps...\n");
+        player->dead = true;
+    } else {
+        printf("Current HP: %d/%d\n", player->getCurrHp(), player->getPlayerClass()->getMaxHp());
+    }
+    
+    cleared = true;
+}
+
+void BossRoom::enterRoom(PlayerCharacter* player) {
+    if (cleared) {
+        printf("\n=== Conquered Boss Room ===\n");
+        printf("The boss has been defeated. Peace fills this chamber.\n");
+        return;
+    }
+    printf("\n=== BOSS ROOM ===\n");
+    printf("You enter a massive chamber. A powerful presence awaits...\n");
+    
+    Enemy* boss = new Enemy("Boss", 150, 150, 25, 10);
+    printf("\nThe Boss emerges from the shadows!\n");
+    Combat::startCombat(player, boss);
+    
+    if (!player->dead) {
+        cleared = true;
+        printf("\n*** FLOOR COMPLETE! ***\n");
+        printf("You have defeated the boss! You can now proceed to the next floor.\n");
+        
+        // Boss always drops good loot
+        printf("\nThe boss dropped valuable items!\n");
+        player->inventory.addItem(new MegaPotion());
+        
+        int lootRoll = rand() % 100;
+        if (lootRoll < 40) {
+            player->inventory.addItem(new SteelAxe());
+        } else if (lootRoll < 70) {
+            player->inventory.addItem(new ChainMail());
+        } else if (lootRoll < 90) {
+            player->inventory.addItem(new MasterStaff());
+        } else {
+            // Rare legendary drop
+            int legendaryRoll = rand() % 3;
+            if (legendaryRoll == 0) {
+                player->inventory.addItem(new Excalibur());
+            } else if (legendaryRoll == 1) {
+                player->inventory.addItem(new PlateArmor());
+            } else {
+                player->inventory.addItem(new ArcaneOrb());
+            }
+        }
+    }
+    delete boss;
+}
+
+// Enemy implementations
+Enemy::Enemy(const char* type, int health, int maxHealth, int dmg, int def) {
+    strncpy(enemyType, type, sizeof(enemyType));
+    enemyType[sizeof(enemyType) - 1] = '\0';
+    hp = health;
+    maxHp = maxHealth;
+    damage = dmg;
+    defense = def;
+}
+
+void Enemy::displayStats() const {
+    printf("Enemy Type: %s\nHP: %d/%d\nDamage: %d\nDefense: %d\n", 
+           enemyType, hp, maxHp, damage, defense);
+}
+
+void Enemy::loseHp(int dmg) {
+    hp -= dmg;
+    if (hp < 0) hp = 0;
+}
+
+void Enemy::gainHp(int heal) {
+    hp += heal;
+}
+
+int Enemy::getHp() const { return hp; }
+int Enemy::getDamage() const { return damage; }
+int Enemy::getDefense() const { return defense; }
+const char* Enemy::getEnemyType() const { return enemyType; }
+
+Enemy Enemy::generateRandomEnemy(int level) {
+    std::string enemies[] = {"Goblin", "Gnome", "Orc", "Kobold", "Thief", "Zombie"};
+    int randomNumber = rand() % 6;
+    std::string enemyName = enemies[randomNumber];
+    int mult = 1 + level;
+    
+    if (enemyName == "Goblin") {
+        return Enemy("Goblin", 50 * mult, 50 * mult, 10 * mult, 5 * mult);
+    } else if (enemyName == "Gnome") {
+        return Enemy("Gnome", 40 * mult, 40 * mult, 8 * mult, 3 * mult);
+    } else if (enemyName == "Orc") {
+        return Enemy("Orc", 80 * mult, 80 * mult, 15 * mult, 8 * mult);
+    } else if (enemyName == "Kobold") {
+        return Enemy("Kobold", 35 * mult, 35 * mult, 12 * mult, 2 * mult);
+    } else if (enemyName == "Thief") {
+        return Enemy("Thief", 45 * mult, 45 * mult, 14 * mult, 4 * mult);
+    } else { // Zombie
+        return Enemy("Zombie", 60 * mult, 60 * mult, 8 * mult, 6 * mult);
     }
 }
-*/
+
+// Combat implementations
+void Combat::startCombat(PlayerCharacter *player, Enemy *enemy) {
+    printf("\nA wild %s appears!\n", enemy->getEnemyType());
+    enemy->displayStats();
+    playerTurn(player, enemy);
+}
+
+void Combat::enemyTurn(PlayerCharacter *player, Enemy *enemy) {
+    printf("\n--- Enemy's Turn ---\n");
+    int baseDmg = enemy->getDamage();
+    // Add randomness to enemy damage (50% to 100% of base damage)
+    int minDmg = baseDmg / 2;
+    int variance = baseDmg - minDmg + 1;
+    int dmg = minDmg + (rand() % variance);
+    
+    int netDmg = dmg - player->getPlayerClass()->getDefense();
+    if (netDmg < 1) netDmg = 1;  // Minimum 1 damage
+    
+    printf("The %s attacks you for %d damage!\n", enemy->getEnemyType(), netDmg);
+    player->loseHp(netDmg);
+    printf("Your HP: %d/%d\n", player->getCurrHp(), player->getPlayerClass()->getMaxHp());
+    
+    if (!isCombatOver(player, enemy)) {
+        playerTurn(player, enemy);
+    }
+}
+
+void Combat::playerTurn(PlayerCharacter *player, Enemy *enemy) {
+    int choice;
+    bool validInput = false;
+    
+    while (!validInput) {
+        printf("\n--- Your Turn ---\n");
+        printf("Enemy HP: %d/%d\n", enemy->getHp(), enemy->maxHp);
+        printf("Your HP: %d/%d\n", player->getCurrHp(), player->getPlayerClass()->getMaxHp());
+        printf("\nChoose an action:\n");
+        printf("1. Attack\n");
+        printf("2. Cast Spell\n");
+        printf("Choice: ");
+        
+        if (std::cin >> choice) {
+            if (choice == 1 || choice == 2) {
+                validInput = true;
+            } else {
+                printf("Invalid choice. Please enter 1 or 2.\n");
+            }
+        } else {
+            printf("Invalid input. Please enter a number.\n");
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+        }
+    }
+    
+    if (choice == 1) {
+        int dmg = player->getPlayerClass()->attack();
+        int netDmg = dmg - enemy->getDefense();
+        if (netDmg < 1) netDmg = 1;  // Minimum 1 damage
+        enemy->loseHp(netDmg);
+        printf("You dealt %d damage to the %s!\n", netDmg, enemy->getEnemyType());
+    } else if (choice == 2) {
+        int spellDmg = player->getPlayerClass()->castSpell();
+        int netDmg = spellDmg - enemy->getDefense();
+        if (netDmg < 1) netDmg = 1;  // Minimum 1 damage
+        enemy->loseHp(netDmg);
+        printf("You dealt %d spell damage to the %s!\n", netDmg, enemy->getEnemyType());
+    }
+    
+    if (!isCombatOver(player, enemy)) {
+        enemyTurn(player, enemy);
+    }
+}
+
+bool Combat::isCombatOver(PlayerCharacter *player, Enemy *enemy) {
+    if (player->getCurrHp() <= 0) { 
+        printf("\n*** YOU HAVE BEEN DEFEATED ***\n");
+        printf("The %s has slain you...\n", enemy->getEnemyType());
+        player->dead = true;
+        return true;
+    }
+    if (enemy->getHp() <= 0) {   
+        printf("\n*** VICTORY! ***\n");
+        printf("You have defeated the %s!\n", enemy->getEnemyType());
+        return true;
+    }
+    return false;
+}

@@ -1,7 +1,7 @@
 #ifndef DUNGEON_HPP
 #define DUNGEON_HPP
 
-#include "header.hpp"
+#include "player.hpp"
 #include <cstdio>
 #include <array>
 #include <memory>
@@ -11,11 +11,12 @@
 #include <iostream>
 #include <random>
 #include <algorithm>
+#include <cstring>
 
-//made this but couldnt figure it out so for now its gonna be just random rooms
-//
+// Forward declarations
 class Room;
 class Floor;
+class Enemy;
 
 class Dungeon {
 public:
@@ -23,6 +24,26 @@ public:
     std::vector<Floor> floors;
     void generateNewFloor();
     static Room* generateRandomRoom(int x, int y);
+};
+
+// Enemy class definition - moved before Room
+class Enemy {
+public:
+    char enemyType[50];
+    int hp;
+    int maxHp;
+    int damage;
+    int defense;
+    Enemy(const char* type, int health, int maxHealth, int dmg, int def);
+    Enemy() {} 
+    void displayStats() const;
+    void loseHp(int dmg);
+    void gainHp(int heal);
+    int getHp() const;
+    int getDamage() const;
+    int getDefense() const;
+    const char* getEnemyType() const;
+    static Enemy generateRandomEnemy(int level);
 };
 
 class Floor {
@@ -50,6 +71,7 @@ public:
 
 class Room {
 public:
+    Enemy enemy;
     PlayerCharacter* player;
     bool cleared = false;
     int xPos;
@@ -58,68 +80,54 @@ public:
     Room *rightRoom = nullptr;
     Room *upRoom = nullptr;
     Room *downRoom = nullptr;
-    virtual void enterRoom() = 0;
-    Room* getLeftRoom() {
-        return leftRoom;
-    }
-    Room* getRightRoom() {
-        return rightRoom;
-    }
-    Room* getUpRoom() {
-        return upRoom;
-    }
-    Room* getDownRoom() {
-        return downRoom;
-    }
+    virtual void enterRoom(PlayerCharacter* player) = 0;
+    Room* getLeftRoom() { return leftRoom; }
+    Room* getRightRoom() { return rightRoom; }
+    Room* getUpRoom() { return upRoom; }
+    Room* getDownRoom() { return downRoom; }
     Room(int x, int y) : xPos(x), yPos(y) {}
-   void EnterRoom(PlayerCharacter* player){
-    this->player = player;
-   }
+    Room() {}
+    virtual ~Room() {}
 };
 
 class BossRoom : public Room {
 public:
-    void enterRoom(){
-
-    };
-
+    void enterRoom(PlayerCharacter* player) override;
     BossRoom(int x, int y) : Room(x,y) {}
 };
 
 class TreasureRoom : public Room {
 public:
-    void enterRoom(){
-
-    };
-
+    void enterRoom(PlayerCharacter* player) override;
     TreasureRoom(int x, int y) : Room(x,y) {}
 };
 
 class TrapRoom : public Room {
 public:
-    void enterRoom(){
-
-    };
-
+    void enterRoom(PlayerCharacter* player) override;
     TrapRoom(int x, int y) : Room(x,y) {}
 };
 
 class BattleRoom : public Room {
 public:
-    void enterRoom(){
-
-    };
-
+    void enterRoom(PlayerCharacter* player) override;
     BattleRoom(int x, int y) : Room(x,y) {}
 };
 
 class StartRoom : public Room {
 public:
-    void enterRoom(){
-
-    };
-
+    void enterRoom(PlayerCharacter* player) override;
     StartRoom(int x, int y) : Room(x,y) {}
+};
+
+class Combat {
+public:
+    PlayerCharacter &player;
+    Enemy &enemy;
+    static void startCombat(PlayerCharacter *player, Enemy *enemy);
+    static void playerTurn(PlayerCharacter *player, Enemy *enemy);
+    static void enemyTurn(PlayerCharacter *player, Enemy *enemy);
+    static bool isCombatOver(PlayerCharacter *player, Enemy *enemy);
 };
 
 #endif //DUNGEON_HPP
